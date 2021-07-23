@@ -14,19 +14,40 @@ public class Player : MonoBehaviour
     private GameObject _tripleShotPrefab;
     [SerializeField]
     private float _fireRate = 0.15f;
+
     private float _canFire = -1f;
+
     [SerializeField]
     private int _lives = 3;
+
     SpawnManager _spawnManager;
+
     [SerializeField]
     bool _isTrippleShotActivated = false;
+
+    bool _isShieldActivated = false;
+
+    [SerializeField]
+    private GameObject _shieldsObj;
+
+    [SerializeField]
+    private int _score;
+
+    private UIManager _uIManager;
     void Start()
     {
         transform.position = new Vector3(0, 0, 0);
         _spawnManager = GameObject.Find("Spawn_Manager").GetComponent<SpawnManager>();
-        if(_spawnManager==null)
+        _uIManager = GameObject.Find("Canvas").GetComponent<UIManager>();
+
+        if (_spawnManager == null)
         {
-            Debug.Log("Spawn manager is null");
+            Debug.LogError("Spawn manager is null");
+        }
+
+        if (_uIManager == null)
+        {
+            Debug.LogError("The UI Manager is Null");
         }
     }
 
@@ -49,7 +70,7 @@ public class Player : MonoBehaviour
 
         transform.position = new Vector3(transform.position.x,
             Mathf.Clamp(transform.position.y, -10, 0), 0);
-   
+
         if (transform.position.x >= 16)
         {
             transform.position = new Vector3(-16, transform.position.y, 0);
@@ -70,16 +91,58 @@ public class Player : MonoBehaviour
         else
         {
             Instantiate(_laserPrefab, transform.position + new Vector3(0, 1.05f, 0), Quaternion.identity);
-        }    
-      
+        }
+
     }
     public void Damage()
     {
+        if (_isShieldActivated)
+        {
+            _isShieldActivated = false;
+            _shieldsObj.SetActive(false);
+            return;
+        }
+
         _lives--;
-        if(_lives<1)
+
+        _uIManager.UpdateLives(_lives);
+
+        if (_lives < 1)
         {
             _spawnManager.OnPlayerDeath();
             Destroy(this.gameObject);
         }
+    }
+    public void TripleShotActivate()
+    {
+        _isTrippleShotActivated = true;
+        StartCoroutine(TripleShotPowerupRoutine());
+    }
+    public void SpeedUpActivated()
+    {
+        _speed = 10f;
+        StartCoroutine(SpeedUpRoutine());
+    }
+    public void ShieldActivated()
+    {
+        _shieldsObj.SetActive(true);
+        _isShieldActivated = true;
+    }
+    IEnumerator SpeedUpRoutine()
+    {
+        yield return new WaitForSeconds(5f);
+        _speed = 3.5f;
+    }
+    IEnumerator TripleShotPowerupRoutine()
+    {
+        yield return new WaitForSeconds(5.0f);
+        _isTrippleShotActivated = false;
+    }
+    //methos to add 10 to score
+    //comunicate with ui to update the score
+    public void AddScore(int points)
+    {
+        _score += points;
+        _uIManager.UpdateScore(_score);
     }
 }
